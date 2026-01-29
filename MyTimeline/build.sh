@@ -73,27 +73,65 @@ SWIFT_FILES=$(find "$PROJECT_DIR/MyTimeline" -name "*.swift" -type f)
 
 echo "📦 编译 Swift 文件..."
 
-# 使用 swiftc 编译
-swiftc \
-    -o "$BUILD_DIR/$APP_NAME.app/Contents/MacOS/$APP_NAME" \
-    -target arm64-apple-macosx14.0 \
-    -sdk $(xcrun --show-sdk-path) \
-    -framework SwiftUI \
-    -framework SwiftData \
-    -framework AppKit \
-    -framework Foundation \
-    -framework Carbon \
-    -parse-as-library \
-    -Onone \
-    $SWIFT_FILES
+# 检查是否需要构建 Universal Binary
+UNIVERSAL=${UNIVERSAL:-false}
 
-# 如果是 Intel Mac，尝试编译 x86_64 版本
-ARCH=$(uname -m)
-if [ "$ARCH" = "x86_64" ]; then
-    echo "🖥️ 检测到 Intel Mac，使用 x86_64 架构..."
+if [ "$UNIVERSAL" = "true" ]; then
+    echo "🌐 构建 Universal Binary (arm64 + x86_64)..."
+    
+    # 编译 arm64 版本
+    echo "  → 编译 arm64..."
+    swiftc \
+        -o "$BUILD_DIR/$APP_NAME-arm64" \
+        -target arm64-apple-macosx14.0 \
+        -sdk $(xcrun --show-sdk-path) \
+        -framework SwiftUI \
+        -framework SwiftData \
+        -framework AppKit \
+        -framework Foundation \
+        -framework Carbon \
+        -parse-as-library \
+        -Onone \
+        $SWIFT_FILES
+    
+    # 编译 x86_64 版本
+    echo "  → 编译 x86_64..."
+    swiftc \
+        -o "$BUILD_DIR/$APP_NAME-x86_64" \
+        -target x86_64-apple-macosx14.0 \
+        -sdk $(xcrun --show-sdk-path) \
+        -framework SwiftUI \
+        -framework SwiftData \
+        -framework AppKit \
+        -framework Foundation \
+        -framework Carbon \
+        -parse-as-library \
+        -Onone \
+        $SWIFT_FILES
+    
+    # 合并为 Universal Binary
+    echo "  → 合并 Universal Binary..."
+    lipo -create \
+        "$BUILD_DIR/$APP_NAME-arm64" \
+        "$BUILD_DIR/$APP_NAME-x86_64" \
+        -output "$BUILD_DIR/$APP_NAME.app/Contents/MacOS/$APP_NAME"
+    
+    # 清理临时文件
+    rm "$BUILD_DIR/$APP_NAME-arm64" "$BUILD_DIR/$APP_NAME-x86_64"
+else
+    # 检测当前架构并编译
+    ARCH=$(uname -m)
+    if [ "$ARCH" = "x86_64" ]; then
+        TARGET="x86_64-apple-macosx14.0"
+        echo "🖥️ 检测到 Intel Mac，使用 x86_64 架构..."
+    else
+        TARGET="arm64-apple-macosx14.0"
+        echo "🍎 检测到 Apple Silicon，使用 arm64 架构..."
+    fi
+    
     swiftc \
         -o "$BUILD_DIR/$APP_NAME.app/Contents/MacOS/$APP_NAME" \
-        -target x86_64-apple-macosx14.0 \
+        -target $TARGET \
         -sdk $(xcrun --show-sdk-path) \
         -framework SwiftUI \
         -framework SwiftData \

@@ -28,7 +28,13 @@ jobs:
       run: |
         cd MyTimeline
         chmod +x build.sh
-        ./build.sh <<< "n"
+        UNIVERSAL=true ./build.sh <<< "n"
+    
+    - name: Verify Universal Binary
+      run: |
+        echo "验证 Universal Binary 架构:"
+        file MyTimeline/build/MyTimeline.app/Contents/MacOS/MyTimeline
+        lipo -info MyTimeline/build/MyTimeline.app/Contents/MacOS/MyTimeline
     
     - name: Create DMG
       if: startsWith(github.ref, 'refs/tags/')
