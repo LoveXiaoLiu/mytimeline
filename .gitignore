@@ -1,0 +1,46 @@
+# Build output
+MyTimeline/build/
+build/
+*.app
+*.dmg
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Dependencies
+Pods/
+Carthage/Build/
+.build/
+
+# Swift Package Manager
+.swiftpm/
+Package.resolved
+
+# Temporary files
+*.tmp
+*.temp
