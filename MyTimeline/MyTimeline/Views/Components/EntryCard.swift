@@ -182,10 +182,18 @@ struct EditEntrySheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var dataStore: DataStore
     @State private var content: String
+    @State private var selectedTags: Set<UUID>
+    
+    private let colors: [Color] = [
+        .blue, .purple, .pink, .red, .orange,
+        .yellow, .green, .mint, .teal, .cyan,
+        .indigo, .brown, .gray
+    ]
     
     init(entry: Entry) {
         self.entry = entry
         self._content = State(initialValue: entry.content)
+        self._selectedTags = State(initialValue: Set(entry.tags.map { $0.id }))
     }
     
     var body: some View {
@@ -195,13 +203,38 @@ struct EditEntrySheet: View {
             
             TextEditor(text: $content)
                 .font(.body)
-                .frame(minHeight: 200)
+                .frame(minHeight: 150)
                 .scrollContentBackground(.hidden)
                 .padding(8)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(nsColor: .textBackgroundColor))
                 )
+            
+            // 标签选择区域
+            VStack(alignment: .leading, spacing: 8) {
+                Text("标签")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(dataStore.allTags) { tag in
+                            TagChip(
+                                tag: tag,
+                                isSelected: selectedTags.contains(tag.id),
+                                onTap: {
+                                    if selectedTags.contains(tag.id) {
+                                        selectedTags.remove(tag.id)
+                                    } else {
+                                        selectedTags.insert(tag.id)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
             
             HStack {
                 Button("取消") {
@@ -214,7 +247,8 @@ struct EditEntrySheet: View {
                 Button("保存") {
                     entry.content = content
                     entry.updatedAt = Date()
-                    entry.aiProcessed = false
+                    // 更新标签
+                    entry.tags = dataStore.allTags.filter { selectedTags.contains($0.id) }
                     dataStore.updateEntry(entry)
                     dismiss()
                 }
@@ -224,7 +258,38 @@ struct EditEntrySheet: View {
             }
         }
         .padding()
-        .frame(width: 500, height: 350)
+        .frame(width: 500, height: 400)
+    }
+}
+
+// MARK: - Tag Chip
+
+struct TagChip: View {
+    let tag: Tag
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(tag.color)
+                .frame(width: 8, height: 8)
+            Text(tag.name)
+                .font(.system(size: 12))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(isSelected ? tag.color.opacity(0.2) : Color.secondary.opacity(0.1))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isSelected ? tag.color : Color.clear, lineWidth: 1.5)
+        )
+        .onTapGesture {
+            onTap()
+        }
     }
 }
 

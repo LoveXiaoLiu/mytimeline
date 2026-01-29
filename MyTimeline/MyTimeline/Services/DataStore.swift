@@ -124,9 +124,32 @@ class DataStore: ObservableObject {
         }
     }
     
-    func deleteTag(_ tag: Tag) {
+    func updateTag(_ tag: Tag, newName: String, newColor: String) {
+        // 更新所有 entry 中的标签
+        for entry in entries {
+            if let index = entry.tags.firstIndex(where: { $0.id == tag.id }) {
+                entry.tags[index].name = newName
+                entry.tags[index].colorHex = newColor
+            }
+        }
+        saveEntries()
+        objectWillChange.send()
+    }
+    
+    func deleteTag(_ tag: Tag, deleteRelatedEntries: Bool = false) {
+        if deleteRelatedEntries {
+            // 删除所有包含该标签的记录
+            entries.removeAll { $0.tags.contains(where: { $0.id == tag.id }) }
+        } else {
+            // 仅从所有 entry 中移除该标签
+            for entry in entries {
+                entry.tags.removeAll { $0.id == tag.id }
+            }
+        }
         tags.removeAll { $0.id == tag.id }
+        saveEntries()
         saveTags()
+        objectWillChange.send()
     }
     
     // MARK: - Query
