@@ -60,25 +60,31 @@ class AIService {
            - "可视化装箱" 和 "新装箱" 是两个不同的项目，必须是两个独立标签
            - "用户系统" 和 "用户认证" 是两个不同的需求，必须是两个独立标签
         3. 禁止模糊关联：不要因为有相似的字就归为同一标签
-        4. 提取内容中明确提到的项目/需求名称，保持原文
-        5. 禁止使用笼统词：开发、会议、文档、测试、沟通、学习、设计、需求、讨论、功能、增加、私有化、拆分
-        6. 标签应是2-8个字的名词短语
+        4. **提取产品/系统/平台名称**：如 "rabbitmq可视化平台" 应提取为 "RabbitMQ可视化"
+        5. 保持专有名词的完整性和原貌
+        6. 标签应是2-10个字的名词短语
         7. 最多返回1-2个标签
+        8. 如果内容中没有具体项目名/产品名/系统名，返回"未分类"
 
         【已有标签供参考】\(tagNames.isEmpty ? "无" : tagNames)
 
         【待分析内容】\(content)
 
-        请只返回标签名称，用逗号分隔。只有内容中明确出现已有标签原文时才复用，否则创建新标签。
+        请只返回标签名称，用逗号分隔。如果没有具体项目名则返回"未分类"。
         """
         
         let response = try await callAPI(prompt: prompt, config: config)
         
         // 解析返回的标签
-        let tags = response
+        var tags = response
             .components(separatedBy: CharacterSet(charactersIn: ",，、"))
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty && $0.count <= 10 }
+            .filter { !$0.isEmpty && $0.count <= 15 && $0 != "无" && $0 != "空" }
+        
+        // 如果没有识别到标签，返回"未分类"
+        if tags.isEmpty {
+            tags = ["未分类"]
+        }
         
         return tags
     }
